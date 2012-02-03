@@ -1,7 +1,7 @@
 <?php
 
 $settings = array(
-  'node_access' => FALSE, // This is a security setting. Whether or not the user has node access permissions.
+  'node_access' => TRUE, // This is a security setting. Whether or not the user has node access permissions.
   'allowed_ip' => array( // What IPs are allowed to call this proxy script.
     '127.0.0.1',
   ),
