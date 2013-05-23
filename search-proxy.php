@@ -18,6 +18,10 @@
  *
  */
 
+// Development defines
+define("ACQUIA_DEVELOPMENT_NOSSL", TRUE);
+define("VERBOSE", TRUE);
+
 // Define the version of this script.
 define('ACQUIA_SEARCH_PROXY_VERSION', "1.0");
 
@@ -438,6 +442,10 @@ else {
   $method = 'GET';
 }
 
+if (defined('VERBOSE')) {
+  echo "URL: " . $url . PHP_EOL;
+  echo "Cookie: " . $cookie . PHP_EOL;
+}
 $result = http_request($url, $request_headers, $method, $rawPost);
 
 if ($result->code == 200 && !$ping) {
