@@ -101,7 +101,8 @@ function acquia_search_auth_cookie(&$url, $string = '', $derived_key = NULL) {
   $query = isset($uri['query']) ? '?'. $uri['query'] : '';
   $url = $scheme . $uri['host'] . $port . $path . $query;
 
-  $nonce = md5(acquia_agent_random_bytes(55));
+  // 32 character nonce.
+  $nonce = base64_encode(drupal_random_bytes(24));
 
   if ($string) {
     $auth_header = acquia_search_authenticator($string, $nonce, $derived_key);
@@ -170,39 +171,7 @@ function acquia_search_extract_hmac($http_response_header) {
  * function since it is a little faster (~1.5x).
  */
 function _acquia_search_hmac($key, $string) {
-  return sha1((str_pad($key, 64, chr(0x00)) ^ (str_repeat(chr(0x5c), 64))) . pack("H*", sha1((str_pad($key, 64, chr(0x00)) ^ (str_repeat(chr(0x36), 64))) . $string)));
-}
-
-/**
- * Returns a string of highly randomized bytes (over the full 8-bit range).
- *
- * This function is better than simply calling mt_rand) or any other built-in
- * PHP function because it can return a long string of bytes (compared to < 4
- * bytes normally from mt_rand)) and uses the best available pseudo-random source.
- *
- * @param $count
- *   The number of characters (bytes) to return in the string.
- */
-function acquia_agent_random_bytes($count) {
-  static $random_state;
-  // We initialize with the somewhat random PHP process ID on the first call.
-  if (empty($random_state)) {
-    $random_state = getmypid();
-  }
-  $output = '';
-  // /dev/urandom is available on many *nix systems and is considered the best
-  // commonly available pseudo-random source.
-  if ($fh = @fopen('/dev/urandom', 'rb')) {
-    $output = fread($fh, $count);
-    fclose($fh);
-  }
-  // If /dev/urandom is not available or returns no bytes, this loop will
-  // generate a good set of pseudo-random bytes on any system.
-  while (strlen($output) < $count) {
-    $random_state = md5(microtime() . mt_rand() . $random_state);
-    $output .= pack('H*', md5(mt_rand() . $random_state));
-  }
-  return substr($output, 0, $count);
+  return hash_hmac('sha1', $string, $key);
 }
 
 function add_request_id(&$url) {
@@ -381,6 +350,68 @@ function http_request($url, $headers = array(), $method = 'GET', $data = NULL, $
   return $result;
 }
 
+
+/**
+ * Returns a string of highly randomized bytes (over the full 8-bit range).
+ *
+ * This function is better than simply calling mt_rand) or any other built-in
+ * PHP function because it can return a long string of bytes (compared to < 4
+ * bytes normally from mt_rand)) and uses the best available pseudo-random source.
+ *
+ * @param $count
+ *   The number of characters (bytes) to return in the string.
+ */
+function drupal_random_bytes($count) {
+  // $random_state does not use drupal_static as it stores random bytes.
+  static $random_state, $bytes, $php_compatible;
+  // Initialize on the first call. The contents of $_SERVER includes a mix of
+  // user-specific and system information that varies a little with each page.
+  if (!isset($random_state)) {
+    $random_state = print_r($_SERVER, TRUE);
+    if (function_exists('getmypid')) {
+      // Further initialize with the somewhat random PHP process ID.
+      $random_state .= getmypid();
+    }
+    $bytes = '';
+  }
+  if (strlen($bytes) < $count) {
+    // PHP versions prior 5.3.4 experienced openssl_random_pseudo_bytes()
+    // locking on Windows and rendered it unusable.
+    if (!isset($php_compatible)) {
+      $php_compatible = version_compare(PHP_VERSION, '5.3.4', '>=');
+    }
+    // /dev/urandom is available on many *nix systems and is considered the
+    // best commonly available pseudo-random source.
+    if ($fh = @fopen('/dev/urandom', 'rb')) {
+      // PHP only performs buffered reads, so in reality it will always read
+      // at least 4096 bytes. Thus, it costs nothing extra to read and store
+      // that much so as to speed any additional invocations.
+      $bytes .= fread($fh, max(4096, $count));
+      fclose($fh);
+    }
+    // openssl_random_pseudo_bytes() will find entropy in a system-dependent
+    // way.
+    elseif ($php_compatible && function_exists('openssl_random_pseudo_bytes')) {
+      $bytes .= openssl_random_pseudo_bytes($count - strlen($bytes));
+    }
+    // If /dev/urandom is not available or returns no bytes, this loop will
+    // generate a good set of pseudo-random bytes on any system.
+    // Note that it may be important that our $random_state is passed
+    // through hash() prior to being rolled into $output, that the two hash()
+    // invocations are different, and that the extra input into the first one -
+    // the microtime() - is prepended rather than appended. This is to avoid
+    // directly leaking $random_state via the $output stream, which could
+    // allow for trivial prediction of further "random" numbers.
+    while (strlen($bytes) < $count) {
+      $random_state = hash('sha256', microtime() . mt_rand() . $random_state);
+      $bytes .= hash('sha256', mt_rand() . $random_state, TRUE);
+    }
+  }
+  $output = substr($bytes, 0, $count);
+  $bytes = substr($bytes, $count);
+  return $output;
+}
+
 /**
  * Verify the derived key
  */
@@ -445,6 +476,7 @@ else {
 if (defined('VERBOSE')) {
   echo "URL: " . $url . PHP_EOL;
   echo "Cookie: " . $cookie . PHP_EOL;
+  echo "Derived Key: " . $settings['derived_key'] . PHP_EOL;
 }
 $result = http_request($url, $request_headers, $method, $rawPost);
 
