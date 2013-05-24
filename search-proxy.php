@@ -473,13 +473,6 @@ else {
   $method = 'GET';
 }
 
-if (defined('VERBOSE')) {
-  echo "URL: " . $url . PHP_EOL;
-  echo "Cookie: " . $cookie . PHP_EOL;
-  echo "Derived Key: " . $settings['derived_key'] . PHP_EOL;
-}
-$result = http_request($url, $request_headers, $method, $rawPost);
-
 if ($result->code == 200 && !$ping) {
   $hmac = acquia_search_extract_hmac($result->raw_headers);
   if (!acquia_search_valid_response($hmac, $nonce, $result->data, $settings['derived_key'])) {
@@ -492,5 +485,12 @@ if ($result->code == 200 && !$ping) {
 foreach ($result->raw_headers as $header) {
   header($header);
 }
+
+if (defined('VERBOSE')) {
+  echo "URL: " . $url . PHP_EOL;
+  echo "Cookie: " . $cookie . PHP_EOL;
+  echo "Derived Key: " . $settings['derived_key'] . PHP_EOL;
+}
+$result = http_request($url, $request_headers, $method, $rawPost);
 
 echo $result->data;
