@@ -179,7 +179,10 @@ function add_request_id(&$url) {
   if (!stristr($url,'?')) {
     $url .= "?";
   }
-  $url .= '&request_id=' . $id;
+  else {
+    $url .= "&";
+  }
+  $url .= 'request_id=' . $id;
   return $id;
 }
 
@@ -473,6 +476,8 @@ else {
   $method = 'GET';
 }
 
+$result = http_request($url, $request_headers, $method, $rawPost);
+
 if ($result->code == 200 && !$ping) {
   $hmac = acquia_search_extract_hmac($result->raw_headers);
   if (!acquia_search_valid_response($hmac, $nonce, $result->data, $settings['derived_key'])) {
@@ -487,10 +492,10 @@ foreach ($result->raw_headers as $header) {
 }
 
 if (defined('VERBOSE')) {
-  echo "URL: " . $url . PHP_EOL;
-  echo "Cookie: " . $cookie . PHP_EOL;
+  echo "URL ($method): " . $url . PHP_EOL;
   echo "Derived Key: " . $settings['derived_key'] . PHP_EOL;
+  echo "Headers: " . print_r($request_headers, TRUE) . PHP_EOL;
 }
-$result = http_request($url, $request_headers, $method, $rawPost);
 
 echo $result->data;
+
