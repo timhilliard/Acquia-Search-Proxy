@@ -17,7 +17,9 @@
  *   http://127.0.0.1:8082/1.x-6.x-dev/search-proxy.php/select?q=drupal
  *
  *  Example usage (cli):
+ *    PATH_INFO="/admin/ping" php search-proxy.php
  *    PATH_INFO="/admin/luke" QUERY_STRING="show=schema" php search-proxy.php
+ *    PATH_INFO="/select" QUERY_STRING="q=foo" php search-proxy.php
  *
  */
 
