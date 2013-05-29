@@ -8,7 +8,7 @@ $settings = array(
   'host' => 'search.acquia.com', // By default use search.acquia.com
   'acquia_identifier' => '', // The Acquia account identifier. e.g. GTWX-10000
   /*
-   * Note: The derived_key is NOT your acquia key and needs to be generated using the drush line above.
+   * Note: The derived_key is NOT your acquia key and needs to be generated using the drush line below.
    * Please execute the following command:
    *   drush php-eval 'echo _acquia_search_derived_key();' (for Apachesolr)
    * or:
