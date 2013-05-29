@@ -14,9 +14,16 @@ Configuration
       'allowed_ip' => array( // What IPs are allowed to call this proxy script.
         '127.0.0.1',
       ),
+      'host' => 'search.acquia.com', // By default use search.acquia.com
       'acquia_identifier' => 'GTWX-10000', // The Acquia account identifier. e.g. GTWX-10000
-      'derived_key' => 'some_hash_generated', // Run drush php-eval 'echo _acquia_search_derived_key();'
-      // Note: The derived_key is NOT your acquia key and needs to be generated using the drush line above.
+      /*
+       * Note: The derived_key is NOT your acquia key and needs to be generated using the drush line below.
+       * Please execute the following command:
+       *   drush php-eval 'echo _acquia_search_derived_key();' (for Apachesolr)
+       * or:
+       *   drush php-eval 'echo SearchApiAcquiaSearchHttpTransport::getDerivedKey();' (for Search API)
+       */
+      'derived_key' => 'some_hash_generated',
     );
     
 
@@ -30,6 +37,12 @@ http://localhost/search-proxy.php/select?q=test
 
 * select - the operation to perform against Acquia Search.
 * q - the query to run against Acquia Search.
+
+Example uses in CLI (command-line interface):
+
+    PATH_INFO="/admin/ping" php search-proxy.php
+    PATH_INFO="/admin/luke" QUERY_STRING="show=schema" php search-proxy.php
+    PATH_INFO="/select" QUERY_STRING="q=foo" php search-proxy.php
 
 
 Example
