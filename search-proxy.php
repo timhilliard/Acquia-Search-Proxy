@@ -25,7 +25,7 @@
 
 // Development defines
 define("ACQUIA_DEVELOPMENT_NOSSL", TRUE);
-define("VERBOSE", TRUE);
+define("VERBOSE", FALSE);
 
 // Define the version of this script.
 define('ACQUIA_SEARCH_PROXY_VERSION', "1.0");
@@ -496,7 +496,7 @@ foreach ($result->raw_headers as $header) {
   header($header);
 }
 
-if (defined('VERBOSE')) {
+if (VERBOSE) {
   echo "URL ($method): " . $url . PHP_EOL;
   echo "Derived Key: " . $settings['derived_key'] . PHP_EOL;
   echo "Headers: " . print_r($request_headers, TRUE) . PHP_EOL;
