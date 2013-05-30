@@ -63,3 +63,10 @@ http://localhost/search-proxy.php/select?q=test
       <lst name="highlighting"/>
     </response>
     
+
+Extras
+------
+Command to download all the solr configuration files from the server (doesn't support directories):
+
+    PATH_INFO="/admin/file" QUERY_STRING="contentType=text/xml;charset=utf-8" php search-proxy.php | grep -o 'lst name="[^"]*' | tail -n +3 | cut -d\" -f2 | xargs -L1 -I% sh -c 'PATH_INFO="/admin/file" QUERY_STRING="contentType=text/xml;charset=utf-8&file=%" php search-proxy.php | tee %'
+
